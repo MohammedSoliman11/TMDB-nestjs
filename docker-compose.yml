@@ -1,5 +1,25 @@
 version: '3.8'
 services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - MONGODB_URI=mongodb://admin:password@mongodb:27017/movie?authSource=admin
+      - REDIS_HOST=redis
+    depends_on:
+      - mongodb
+      - redis
+
+  cron:
+    build:
+      context: .
+      dockerfile: Dockerfile.cron
+    depends_on:
+      - app
+    environment:
+      - NODE_ENV=production
+
   redis:
     image: redis:latest
     ports:
@@ -7,6 +27,18 @@ services:
     volumes:
       - redis_data:/data
     command: redis-server --appendonly yes
+
+  mongodb:
+    image: mongo:latest
+    ports:
+      - "27019:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=password
+    volumes:
+      - mongodb_data:/data/db
+    restart: unless-stopped
+
 volumes:
   redis_data:
   mongodb_data:
