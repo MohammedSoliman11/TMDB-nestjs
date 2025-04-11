@@ -1,57 +1,73 @@
-import { Body, Controller, Get, HttpException, Param, Patch, Post } from "@nestjs/common";
-import { UserService } from "./user.service";
-import { CreateUserDto } from "./dto/CreatUser.dto";
-import mongoose from "mongoose";
-import { UpdateUserDto } from "./dto/UpdateUser.dto";
-import { ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
-import { User } from "../schemas/user.schema";
+import { Controller, Get, Post, Body, Param, Put, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiBody } from '@nestjs/swagger';
+import { UserService } from './user.service';
+import { CreateUserDto } from './dto/CreatUser.dto';
+import { UpdateUserDto } from './dto/UpdateUser.dto';
+// import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
+@ApiTags('Users')
 @Controller('users')
-@ApiTags('users')
+@ApiBearerAuth()
 export class UserController {
+  constructor(private readonly userService: UserService) {}
 
-    constructor(private userService: UserService) {}
-    @Post()
-    
-    @ApiOperation({ summary: 'Create a new user' })
-    @ApiResponse({ status: 201, description: 'The user has been successfully created.', type: User })
-    createUser(@Body() createUserDto: CreateUserDto) {
-        console.log(createUserDto);
-        return this.userService.createUser(createUserDto);
-    }
-    @Get()
-    @ApiOperation({ summary: 'Get all users' })
-    @ApiResponse({ status: 200, description: 'Return all users.', type: [User] })
-    getUsers() {
-        return this.userService.getUsers();
-    }
+  @Post()
+  @ApiOperation({ summary: 'Create a new user' })
+  @ApiResponse({ status: 201, description: 'User successfully created' })
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  @ApiBody({ type: CreateUserDto })
+  async createUser(@Body() createUserDto: CreateUserDto) {
+    return this.userService.createUser(createUserDto);
+  }
 
-    @Get(':id')
-    @ApiResponse({ status: 200, description: 'Return the user.', type: User })
-    @ApiResponse({ status: 404, description: 'User not found.' })
-    async getUserById(@Param() param: any) {
-        console.log(param);
-        const isValid = mongoose.Types.ObjectId.isValid(param.id);
-        if(!isValid){
-            return new HttpException('invalid id', 400);
-        }
-        const user = await this.userService.getUserById(param.id);
-        if(!user){
-            return new HttpException('user not found', 404);
-        }
-        return user;
-    }
+  @Get()
+//   @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Get all users' })
+  @ApiResponse({ status: 200, description: 'Return all users' })
+  async getUsers() {
+    return this.userService.getUsers();
+  }
 
-    @Patch(':id')
-    updateUser(@Param() param: any, @Body() updateUser: UpdateUserDto) {
-        console.log(param);
-        console.log(updateUser);
-        return this.userService.updateUser(param.id, updateUser);
-    }
+  @Get(':id')
+//   @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Get a user by id' })
+  @ApiParam({ name: 'id', description: 'User ID' })
+  @ApiResponse({ status: 200, description: 'Return a user' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  async getUserById(@Param('id') id: string) {
+    return this.userService.getUserById(id);
+  }
 
-    @Post(':id/favorites/:movieId')
-    addFavorite(@Param() param: any) {
-        console.log(param);
-        return this.userService.addFavorite(param.id, param.movieId);
-    }
+  @Put(':id')
+//   @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Update a user' })
+  @ApiParam({ name: 'id', description: 'User ID' })
+  @ApiBody({ type: UpdateUserDto })
+  @ApiResponse({ status: 200, description: 'User updated successfully' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  async updateUser(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
+    return this.userService.updateUser(id, updateUserDto);
+  }
+
+  @Post(':id/favorites/:movieId')
+//   @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Add movie to user favorites' })
+  @ApiParam({ name: 'id', description: 'User ID' })
+  @ApiParam({ name: 'movieId', description: 'Movie ID' })
+  @ApiResponse({ status: 201, description: 'Movie added to favorites' })
+  @ApiResponse({ status: 404, description: 'User or movie not found' })
+  async addFavorite(@Param('id') id: string, @Param('movieId') movieId: number) {
+    return this.userService.addFavorite(id, movieId);
+  }
+
+  // get user favorites
+  @Get(':id/favorites')
+//   @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Get user favorites' })
+  @ApiParam({ name: 'id', description: 'User ID' })
+  @ApiResponse({ status: 200, description: 'Return user favorites' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  async getFavorites(@Param('id') id: string) {
+    return this.userService.getFavorites(id);
+  }
 }

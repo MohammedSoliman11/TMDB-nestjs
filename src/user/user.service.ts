@@ -4,13 +4,16 @@ import { Model } from "mongoose";
 import { User } from "../schemas/user.schema";
 import { CreateUserDto } from "./dto/CreatUser.dto";
 import { UpdateUserDto } from "./dto/UpdateUser.dto";
+import { Movie } from "../schemas/movie.schema";
 import { UserFavorite } from "../schemas/UserFavorite.schema";
 
 @Injectable({})
 export class UserService {
     constructor(
         @InjectModel(User.name) private userModel: Model<User>, 
+        @InjectModel(Movie.name) private movieModel: Model<Movie>,
         @InjectModel(UserFavorite.name) private userFavorateModel: Model<UserFavorite>
+
     ) { }
     
     async createUser(createUserDto: CreateUserDto) {
@@ -34,15 +37,22 @@ export class UserService {
         if (!user) {
             return new HttpException("User not found", 404);
         } 
-        
-        const favorite = await this.userFavorateModel.findById(movieId);
-        if (favorite) {
-            return user;
+        console.log(JSON.stringify(user));
+        const favorite = await this.movieModel.findOne({id: +movieId}).exec();
+        if (!favorite) {
+            return new HttpException("Movie not found", 404);
         }
-        const newFavorite = new this.userFavorateModel({
-            movieId: movieId,
+        console.log(JSON.stringify(favorite));
+
+        const newFavorite = await this.userFavorateModel.create({
+            movieId: +movieId,
             userId: id, 
         });
-        await newFavorite.save();
+        return newFavorite;
+    }
+
+    // get favorites
+    async getFavorites(id: string) {
+        return this.userFavorateModel.find({ userId: id }).populate('movieId').exec();
     }
 }
