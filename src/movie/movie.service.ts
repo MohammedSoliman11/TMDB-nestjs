@@ -1,13 +1,14 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Movie } from '../schemas/movie.schema';
 import { ConfigService } from '@nestjs/config';
 import { RedisService } from '../config/redis.config';
 import axios from 'axios';
+import { Cron, CronExpression } from '@nestjs/schedule';
 
 @Injectable()
-export class MovieService {
+export class MovieService implements OnApplicationBootstrap {
   private readonly logger = new Logger(MovieService.name);
   private readonly CACHE_KEY = 'tmdb:movies';
   private readonly CACHE_DURATION = 3600; // 1 hour
@@ -157,5 +158,33 @@ export class MovieService {
       console.error(`Error syncing movies: ${err.message}`);
       throw err;
     }
+  }
+
+  async getMovies() {
+    try {
+      const movies = await this.movieModel.find({}, { _id: 0, __v: 0 }).exec();
+      return movies;
+    } catch (err) {
+      console.error(`Error fetching movies: ${err.message}`);
+      throw err;
+    }
+  }
+
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT, {
+    name: 'movie-sync-job'
+  })
+  async scheduledMovieSync() {
+    this.logger.log('Starting scheduled movie sync...');
+    try {
+      await this.fetchMovies();
+      this.logger.log('Scheduled movie sync completed');
+    } catch (error) {
+      this.logger.error(`Scheduled movie sync failed: ${error.message}`);
+    }
+  }
+
+  async onApplicationBootstrap() {
+    this.logger.log('Running initial movie sync on application startup...');
+    await this.scheduledMovieSync();
   }
 }
