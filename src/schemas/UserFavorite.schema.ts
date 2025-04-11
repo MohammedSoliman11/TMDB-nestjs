@@ -5,7 +5,7 @@ export class UserFavorite {
     @Prop({ required: true })
     userId: string;
     @Prop({ required: true})
-    favoriteId: string;
+    movieId: string;
     @Prop({ default: Date.now})
     createdAt: Date;
 }
