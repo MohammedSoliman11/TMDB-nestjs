@@ -16,15 +16,15 @@ export class DatabaseConfig implements MongooseOptionsFactory {
       retryDelay: 3000,
       connectionFactory: (connection) => {
         connection.on('connected', () => {
-          this.logger.log('MongoDB connected successfully');
+          this.logger.log('✅ MongoDB connected successfully');
         });
 
         connection.on('disconnected', () => {
-          this.logger.warn('MongoDB disconnected');
+          this.logger.warn('⚠️ MongoDB disconnected');
         });
 
         connection.on('error', (error) => {
-          this.logger.error(`MongoDB connection error: ${error}`);
+          this.logger.error(`❌ MongoDB connection error: ${error.message}`, error.stack);
         });
 
         return connection;

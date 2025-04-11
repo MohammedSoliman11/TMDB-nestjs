@@ -1,18 +1,21 @@
-import { CacheModule,CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Global, Module, OnModuleInit, Injectable } from '@nestjs/common';
-import { redisStore } from 'cache-manager-redis-store';
-import { Inject } from '@nestjs/common';
-import { Cache } from 'cache-manager';
-import { RedisHealthController } from './redis.health';
+import Redis from 'ioredis';
 
 @Injectable()
-class RedisService implements OnModuleInit {
-  constructor(@Inject(CACHE_MANAGER) private cacheManager: Cache) {}
+export class RedisService implements OnModuleInit {
+  private readonly redis: Redis;
+
+  constructor() {
+    this.redis = new Redis({
+      host: 'localhost',
+      port: 6379,
+    });
+  }
 
   async onModuleInit() {
     try {
-      await this.cacheManager.set('test', 'test');
-      const result = await this.cacheManager.get('test');
+      await this.redis.set('test', 'test');
+      const result = await this.redis.get('test');
       if (result === 'test') {
         console.log('✅ Redis connection successful');
       }
@@ -20,21 +23,15 @@ class RedisService implements OnModuleInit {
       console.error('❌ Redis connection failed:', error);
     }
   }
+
+  getClient(): Redis {
+    return this.redis;
+  }
 }
 
 @Global()
 @Module({
-  imports: [
-    CacheModule.registerAsync({
-      useFactory: () => ({
-        store: redisStore,
-        host: 'localhost',
-        port: 6379,
-      }),
-    }),
-  ],
   providers: [RedisService],
-  controllers: [RedisHealthController],
-  exports: [CacheModule],
+  exports: [RedisService],
 })
 export class RedisModule {}
