@@ -1,13 +1,19 @@
-import { Schema, Prop, SchemaFactory } from "@nestjs/mongoose";
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { ApiProperty } from '@nestjs/swagger';
 
 @Schema()
-export class Movie{
-    @Prop({ required: true, unique: true })
-    tmdbId: number;
-    @Prop({ required: true })
-    title: string;
-    @Prop({ required: true })
-    genres: string[];
+export class Movie {
+  @ApiProperty()
+  @Prop({ required: true, unique: true })
+  id: number;
+
+  @ApiProperty()
+  @Prop({ required: true })
+  title: string;
+
+  @ApiProperty()
+  @Prop({ type: [Number] })
+  genre_ids: number[];
 }
 
-export const MoviceSchema = SchemaFactory.createForClass(Movie);
+export const MovieSchema = SchemaFactory.createForClass(Movie);
