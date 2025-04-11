@@ -2,10 +2,10 @@ import { ConflictException, Injectable, UnauthorizedException } from "@nestjs/co
 import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
-import { User } from "src/schemas/user.schema";
+import { User } from "../schemas/user.schema";
 import { SignInDto } from "./dto/SignIn.dto";
 import { SignUpDto } from "./dto/SignUp.dto";
-import * as bcrypt from 'bcrypt';
+import * as argon2 from 'argon2';
 
 @Injectable({})
 export class AuthService {
@@ -22,9 +22,7 @@ export class AuthService {
                 throw new ConflictException('Email already exists');
             }
 
-            // Hash password
-            const salt = await bcrypt.genSalt();
-            const hashedPassword = await bcrypt.hash(signUpDto.password, salt);
+            const hashedPassword = await argon2.hash(signUpDto.password);
 
             // Create new user
             const newUser = new this.userModel({
@@ -52,7 +50,7 @@ export class AuthService {
             throw new UnauthorizedException('User not found');
         }
         
-        const isPasswordValid = await bcrypt.compare(signinDto.password, user.password);
+        const isPasswordValid = await argon2.verify(signinDto.password, user.password);
         if (!isPasswordValid) {
             throw new UnauthorizedException('Invalid credentials');
         }
